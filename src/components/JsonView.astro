@@ -1,0 +1,90 @@
+---
+
+---
+
+<section class="w-7xl mx-auto grid grid-cols-2">
+  <form class="p-5" action="#">
+    <div class="entryarea">
+      <label for="name">Nombre del Proyecto</label>
+      <input type="text" />
+    </div>
+    <div class="entryarea">
+      <label for="version">Version</label>
+      <input type="text" />
+    </div>
+    <div class="entryarea">
+      <label for="description">Describe tu proyecto</label>
+      <textarea name="description" id="description"></textarea>
+    </div>
+  </form>
+  <div class="bg-gray-400/90 rounded">
+    <header>
+      <h2>VSCODE</h2>
+    </header>
+    <pre class="px-8 py-5 leading-normal" id="output"></pre>
+  </div>
+</section>
+
+<script>
+  const jsonTest = {
+    name: "nombre-de-tu-proyecto",
+    version: "1.0.0",
+    description: "Una breve descripción del proyecto",
+    main: "index.js",
+    type: "module",
+    scripts: {
+      start: "node index.js",
+      dev: "nodemon index.js",
+      test: 'echo "Error: no test specified" && exit 1',
+    },
+    keywords: [],
+    author: "Tu Nombre",
+    license: "MIT",
+    dependencies: {
+      // Librerías necesarias en producción
+    },
+    devDependencies: {
+      // Herramientas necesarias solo para desarrollo
+      nodemon: "^3.0.0",
+    },
+    engines: {
+      node: ">=18.0.0",
+    },
+  };
+  const pre = document.getElementById("output"); // ✅ sin "as HTMLElement"
+  if (pre) pre.innerHTML = JSON.stringify(jsonTest, null, 2);
+</script>
+
+<style>
+  .entryarea {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 8px 0;
+  }
+
+  .entryarea label {
+    font-size: 13px;
+    padding: 0 5px;
+  }
+
+  input,
+  textarea {
+    padding: 5px;
+    border: 1px solid #a1a1a1;
+    border-radius: 3pt;
+    background-color: #fff;
+  }
+
+  pre {
+    background-color: #0f172a;
+    color: #e5e7eb;
+    padding: 16px;
+    border-radius: 10px;
+    overflow: auto;
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre;
+  }
+</style>

@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+.j-key {
+    color: #93c5fd;
+  } /* keys */
+  .j-string {
+    color: #86efac;
+  } /* strings */
+  .j-number {
+    color: #fca5a5;
+  } /* numbers */
+  .j-boolean {
+    color: #fcd34d;
+  } /* booleans */
+  .j-null {
+    color: #c4b5fd;
+  } /* null */
+  .j-punc {
+    color: #94a3b8;
+  } /* punctuation {}[],: */
