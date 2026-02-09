@@ -1,58 +1,302 @@
----
-
----
-
-<section class="w-7xl mx-auto grid grid-cols-2">
-  <form class="p-5" action="#">
+<section class="w-7xl mx-auto grid grid-cols-2 gap-4">
+  <form id="formJson" class="p-5" action="#">
+    <!-- name -->
     <div class="entryarea">
       <label for="name">Nombre del Proyecto</label>
-      <input type="text" />
+      <input
+        name="name"
+        id="name"
+        type="text"
+        placeholder="ej. mi-primer-proyecto"
+      />
     </div>
+
+    <!-- version -->
     <div class="entryarea">
-      <label for="version">Version</label>
-      <input type="text" />
+      <label for="version">Versión</label>
+      <select name="version" id="version">
+        <option value="0.0.1" selected>0.0.1</option>
+        <option value="1.0.0">1.0.0</option>
+      </select>
     </div>
+
+    <!-- description -->
     <div class="entryarea">
       <label for="description">Describe tu proyecto</label>
-      <textarea name="description" id="description"></textarea>
+      <textarea
+        name="description"
+        id="description"
+        placeholder="ej. Este proyecto se trata de facilitar..."></textarea>
+    </div>
+
+    <!-- main -->
+    <div class="entryarea">
+      <label for="main">Archivo principal</label>
+      <input id="main" name="main" type="text" placeholder="ej. index.js" />
+    </div>
+
+    <!-- type -->
+    <div class="entryarea">
+      <label for="type">Elige el módulo</label>
+      <select name="type" id="type">
+        <option value="module" selected>Module</option>
+        <option value="commonjs">CommonJS</option>
+      </select>
+    </div>
+
+    <!-- scripts -->
+    <div class="entryarea">
+      <label>Scripts</label>
+      <div id="scriptsWrap" class="flex flex-col gap-y-4"></div>
+      <small id="scriptsWarn" class="warn"></small>
+    </div>
+
+    <!-- author -->
+    <div class="entryarea">
+      <label for="author">Autor</label>
+      <input
+        id="author"
+        name="author"
+        type="text"
+        placeholder="ej. Juan Pérez"
+      />
+    </div>
+
+    <!-- license -->
+    <div class="entryarea">
+      <label for="license">Licencia</label>
+      <input id="license" name="license" type="text" placeholder="ej. MIT" />
     </div>
   </form>
+
   <div class="bg-gray-400/90 rounded">
-    <header>
-      <h2>VSCODE</h2>
+    <header class="flex justify-between items-center p-2">
+      <h2 class="text-sm">package.json</h2>
+      <div class="flex justify-center items-center gap-x-2">
+        <button id="btnCopy" type="button" class="btn">Copiar</button>
+        <span class="min size-3 rounded-full bg-amber-300 block"></span>
+        <span class="max size-3 rounded-full bg-green-700 block"></span>
+        <span class="close size-3 rounded-full bg-red-600 block"></span>
+      </div>
     </header>
     <pre class="px-8 py-5 leading-normal" id="output"></pre>
   </div>
 </section>
 
 <script>
-  const jsonTest = {
-    name: "nombre-de-tu-proyecto",
-    version: "1.0.0",
-    description: "Una breve descripción del proyecto",
-    main: "index.js",
-    type: "module",
-    scripts: {
-      start: "node index.js",
-      dev: "nodemon index.js",
-      test: 'echo "Error: no test specified" && exit 1',
-    },
-    keywords: [],
-    author: "Tu Nombre",
-    license: "MIT",
-    dependencies: {
-      // Librerías necesarias en producción
-    },
-    devDependencies: {
-      // Herramientas necesarias solo para desarrollo
-      nodemon: "^3.0.0",
-    },
-    engines: {
-      node: ">=18.0.0",
-    },
+  // ====== Referencias DOM ======
+  const pre = document.getElementById("output") as HTMLElement;
+  const form = document.getElementById("formJson") as HTMLElement;
+  const scriptWrap = document.getElementById("scriptsWrap") as HTMLElement;
+  const scriptsWarn = document.getElementById("scriptsWarn") as HTMLElement;
+  const btnCopy = document.getElementById("btnCopy") as HTMLElement;
+
+  // ====== Estado ======
+  const defaultScripts = {
+    test: 'echo "Error: no test specified" && exit 1',
   };
-  const pre = document.getElementById("output"); // ✅ sin "as HTMLElement"
-  if (pre) pre.innerHTML = JSON.stringify(jsonTest, null, 2);
+
+  const scriptsState = [{ name: "", command: "" }];
+
+  // Objeto base: empieza con defaults razonables
+
+  type PackageJson = {
+    name?: string;
+    version?: string;
+    description?: string;
+    main?: string;
+    type: "module";
+    scripts: Record<string, unknown>;
+    author?: string;
+    license?: string;
+
+    [key: string]: unknown;
+  };
+  const generateJson: PackageJson = {
+    name: undefined,
+    version: "0.0.1",
+    description: undefined,
+    main: undefined,
+    type: "module",
+    scripts: { ...defaultScripts },
+    author: undefined,
+    license: undefined,
+  };
+
+  // ====== Utilidades ======
+  function render() {
+    // Limpia keys undefined antes de imprimir
+    const clean: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(generateJson)) {
+      if (v === undefined) continue;
+      // Si scripts queda vacío, también lo omitimos
+      if (k === "scripts" && v && Object.keys(v).length === 0) continue;
+      clean[k] = v;
+    }
+    pre.textContent = JSON.stringify(clean, null, 2);
+  }
+
+  function setOrDelete(key: string, value: unknown) {
+    if (value === "" || value == null) {
+      generateJson[key] = undefined;
+    } else {
+      generateJson[key] = value;
+    }
+  }
+
+  // Normalización “inteligente” por campo
+  function normalizeByField(name: string, rawValue: string) {
+    const value = rawValue.trim();
+    if (!value) return "";
+
+    // Campos que deben conservar espacios tal cual (solo trim)
+    const keepSpaces = new Set(["description", "author"]);
+    if (keepSpaces.has(name)) return value;
+
+    // scripts NO pasan por aquí (se manejan aparte)
+
+    // license: normalmente es un identificador corto (MIT, ISC, Apache-2.0)
+    if (name === "license") return value;
+
+    // version: no la transformes, solo trim
+    if (name === "version") return value;
+
+    // main: no lo “rompas” con guiones; solo trim
+    if (name === "main") return value;
+
+    // type: viene del select (module/commonjs)
+    if (name === "type") return value;
+
+    // name: sanitización estilo npm package name
+    if (name === "name") {
+      return value
+        .toLowerCase()
+        .replace(/\s+/g, "-") // espacios -> guiones
+        .replace(/[^a-z0-9._-]/g, "") // quita caracteres raros
+        .replace(/-+/g, "-") // colapsa guiones
+        .replace(/^-|-$/g, ""); // sin guiones al inicio/fin
+    }
+
+    return value;
+  }
+
+  // ====== Scripts UI ======
+  function appendScriptRow(index: Number) {
+    const row = document.createElement("div");
+    row.className = "grid grid-cols-4 gap-x-4";
+
+    row.innerHTML = `
+      <input class="col-span-1 p-[5px] border border-[#a1a1a1] bg-white rounded-[3pt]"
+        placeholder="ej. dev"
+        value=""
+        data-index="${index}" data-field="name" />
+
+      <input class="col-span-3 p-[5px] border border-[#a1a1a1] bg-white rounded-[3pt]"
+        placeholder="ej. astro dev"
+        value=""
+        data-index="${index}" data-field="command" />
+    `;
+
+    scriptWrap.appendChild(row);
+  }
+
+  function ensureEmptyRow(currentIndex: Number) {
+    const lastIndex = scriptsState.length - 1;
+    if (currentIndex !== lastIndex) return;
+
+    const last = scriptsState[lastIndex];
+    if (last.name && last.command) {
+      scriptsState.push({ name: "", command: "" });
+      appendScriptRow(scriptsState.length - 1);
+    }
+  }
+
+  function updateScriptsInJson() {
+    const scriptsObject: Record<string, unknown> = { ...defaultScripts };
+    const seen = new Set();
+    const duplicates = [];
+
+    for (const { name, command } of scriptsState) {
+      const n = name.trim();
+      const c = command; // OJO: comandos deben conservar espacios
+      if (!n || !c.trim()) continue;
+
+      if (seen.has(n)) duplicates.push(n);
+      seen.add(n);
+
+      scriptsObject[n] = c; // si duplica, lo pisa: avisamos abajo
+    }
+
+    // Mostrar warning de duplicados
+    if (duplicates.length > 0) {
+      scriptsWarn.textContent =
+        "Scripts repetidos: " +
+        [...new Set(duplicates)].join(", ") +
+        " (se está usando el último).";
+    } else {
+      scriptsWarn.textContent = "";
+    }
+
+    // Si solo existe el default test, lo dejamos; si quieres omitirlo, lo puedes quitar aquí.
+    generateJson.scripts = scriptsObject;
+
+    render();
+  }
+
+  // ====== Eventos ======
+  document.addEventListener("DOMContentLoaded", () => {
+    appendScriptRow(0);
+    render();
+  });
+
+  // Evita submit y brincos
+  form.addEventListener("submit", (e) => e.preventDefault());
+
+  // 1) Listener general al form (menos código que listeners por input)
+  form.addEventListener("input", (e) => {
+    const el = e.target as HTMLInputElement;
+    if (!el || !el.name) return;
+
+    // scripts no se procesan aquí (son inputs dinámicos)
+    if (el.closest("#scriptsWrap")) return;
+
+    const normalized = normalizeByField(el.name, el.value);
+
+    // Omitimos keys vacías (en vez de poner "")
+    setOrDelete(el.name, normalized);
+
+    render();
+  });
+
+  // 2) Listener para inputs dinámicos de scripts
+  scriptWrap.addEventListener("input", (e) => {
+    const target = e.target as HTMLInputElement;
+    if (!target || !target.dataset.index) return;
+
+    const index = Number(target.dataset.index);
+    const field = target.dataset.field;
+    if (field !== "name" && field !== "command") return;
+
+    // name: se recomienda trim; command: dejamos espacios internos, solo trim al final/inicio
+    if (field === "name") scriptsState[index][field] = target.value.trim();
+    if (field === "command")
+      scriptsState[index][field] = target.value.replace(/^\s+|\s+$/g, "");
+
+    ensureEmptyRow(index);
+    updateScriptsInJson();
+  });
+
+  // 3) Copiar JSON
+  btnCopy.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(pre.textContent || "");
+      btnCopy.textContent = "Copiado ✅";
+      setTimeout(() => (btnCopy.textContent = "Copiar"), 1200);
+    } catch {
+      btnCopy.textContent = "No se pudo 😕";
+      setTimeout(() => (btnCopy.textContent = "Copiar"), 1200);
+    }
+  });
 </script>
 
 <style>
@@ -68,19 +312,59 @@
     padding: 0 5px;
   }
 
+  .hint {
+    font-size: 12px;
+    opacity: 0.75;
+    padding: 0 5px;
+  }
+
+  .warn {
+    font-size: 12px;
+    color: #7c2d12;
+    padding: 0 5px;
+  }
+
   input,
-  textarea {
+  textarea,
+  select {
     padding: 5px;
     border: 1px solid #a1a1a1;
     border-radius: 3pt;
     background-color: #fff;
   }
+  textarea {
+    resize: none;
+  }
+
+  h2 {
+    font-family: "Times New Roman", Times, serif;
+    font-style: italic;
+  }
+
+  .btn {
+    border: 1px solid #111827;
+    background: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    transition: all 0.1s ease;
+  }
+
+  .btn:hover {
+    cursor: pointer;
+    background: gray;
+  }
+
+  .btn:active {
+    scale: 0.9;
+  }
 
   pre {
+    height: 100%;
     background-color: #0f172a;
     color: #e5e7eb;
     padding: 16px;
-    border-radius: 10px;
+    border-radius: 0 0 10px 10px;
     overflow: auto;
     font-family: monospace;
     font-size: 13px;
