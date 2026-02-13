@@ -1,5 +1,5 @@
-<section class="w-7xl mx-auto grid grid-cols-2 gap-4">
-  <form id="formJson" class="p-5" action="#">
+<section class="w-7xl mx-auto grid grid-cols-2 gap-x-12">
+  <form class="bg-white p-5 rounded-lg shadow-lg" id="formJson" action="#">
     <!-- name -->
     <div class="entryarea">
       <label for="name">Nombre del Proyecto</label>
@@ -10,7 +10,6 @@
         placeholder="ej. mi-primer-proyecto"
       />
     </div>
-
     <!-- version -->
     <div class="entryarea">
       <label for="version">Versión</label>
@@ -19,7 +18,6 @@
         <option value="1.0.0">1.0.0</option>
       </select>
     </div>
-
     <!-- description -->
     <div class="entryarea">
       <label for="description">Describe tu proyecto</label>
@@ -28,29 +26,17 @@
         id="description"
         placeholder="ej. Este proyecto se trata de facilitar..."></textarea>
     </div>
-
     <!-- main -->
     <div class="entryarea">
       <label for="main">Archivo principal</label>
       <input id="main" name="main" type="text" placeholder="ej. index.js" />
     </div>
-
-    <!-- type -->
-    <div class="entryarea">
-      <label for="type">Elige el módulo</label>
-      <select name="type" id="type">
-        <option value="module" selected>Module</option>
-        <option value="commonjs">CommonJS</option>
-      </select>
-    </div>
-
     <!-- scripts -->
     <div class="entryarea">
       <label>Scripts</label>
       <div id="scriptsWrap" class="flex flex-col gap-y-4"></div>
       <small id="scriptsWarn" class="warn"></small>
     </div>
-
     <!-- author -->
     <div class="entryarea">
       <label for="author">Autor</label>
@@ -61,15 +47,22 @@
         placeholder="ej. Juan Pérez"
       />
     </div>
-
     <!-- license -->
     <div class="entryarea">
       <label for="license">Licencia</label>
       <input id="license" name="license" type="text" placeholder="ej. MIT" />
     </div>
+    <!-- type -->
+    <div class="entryarea">
+      <label for="type">Elige el módulo</label>
+      <select name="type" id="type">
+        <option value="commonjs" selected>CommonJS</option>
+        <option value="module">Module</option>
+      </select>
+    </div>
   </form>
 
-  <div class="bg-gray-400/90 rounded">
+  <div class="bg-gray-400/90 rounded shadow-lg">
     <header class="flex justify-between items-center p-2">
       <h2 class="text-sm">package.json</h2>
       <div class="flex justify-center items-center gap-x-2">
@@ -105,7 +98,7 @@
     version?: string;
     description?: string;
     main?: string;
-    type: "module";
+    type: string;
     scripts: Record<string, unknown>;
     author?: string;
     license?: string;
@@ -113,14 +106,14 @@
     [key: string]: unknown;
   };
   const generateJson: PackageJson = {
-    name: undefined,
+    name: "",
     version: "0.0.1",
-    description: undefined,
-    main: undefined,
-    type: "module",
+    description: "",
+    main: "index.js",
+    type: "commonjs",
     scripts: { ...defaultScripts },
-    author: undefined,
-    license: undefined,
+    author: "",
+    license: "ISC",
   };
 
   // ====== Utilidades ======
@@ -360,7 +353,7 @@
   }
 
   pre {
-    height: 100%;
+    height: 96%;
     background-color: #0f172a;
     color: #e5e7eb;
     padding: 16px;
